@@ -1,0 +1,633 @@
+// Game State
+const gameState = {
+    currentLevel: 1,
+    completedLevels: [],
+    currentMode: '',
+    originalImage: '',
+    originalImageDescription: '',
+    recreatedImage: '',
+    userWords: [],
+    timerInterval: null,
+    imageViewTime: 10,
+    selectedBias: null
+};
+
+// API Configuration - Now loaded from config.js
+// Note: Google Gemini can generate detailed text descriptions
+// We'll use it to create rich image descriptions and then use image generation services
+
+// Level configurations
+const levelConfig = {
+    1: { mode: 'core', prompt: 'A peaceful mountain landscape at sunset', difficulty: 'easy' },
+    2: { mode: 'core', prompt: 'A busy city street with people and cars', difficulty: 'medium' },
+    3: { mode: 'core', prompt: 'An underwater scene with colorful coral and tropical fish', difficulty: 'hard' },
+    4: { mode: 'blind', prompt: 'A cozy coffee shop interior with warm lighting', viewTime: 10 },
+    5: { mode: 'blind', prompt: 'A vintage library with tall bookshelves', viewTime: 8 },
+    6: { mode: 'blind', prompt: 'A modern art gallery with abstract paintings', viewTime: 6 },
+    7: { mode: 'emotion', prompt: 'A lonely figure on an empty beach', difficulty: 'easy' },
+    8: { mode: 'emotion', prompt: 'A tense meeting room atmosphere', difficulty: 'medium' },
+    9: { mode: 'emotion', prompt: 'A joyful celebration with vibrant energy', difficulty: 'hard' },
+    10: { mode: 'bias', prompt: 'A doctor examining a patient', biasType: 'gender' },
+    11: { mode: 'bias', prompt: 'A chef cooking in a restaurant', biasType: 'cultural' },
+    12: { mode: 'bias', prompt: 'A scientist working in a laboratory', biasType: 'stereotype' }
+};
+
+// Initialize game
+function initGame() {
+    renderLevelSelect();
+    updateProgressDisplay();
+}
+
+// Screen Navigation
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    document.getElementById(screenId).classList.add('active');
+}
+
+// Render Level Select
+function renderLevelSelect() {
+    // Levels 1-3 (Core)
+    renderLevelButtons(1, 3, 'levels-1-3');
+    // Levels 4-6 (Blind)
+    renderLevelButtons(4, 6, 'levels-4-6');
+    // Levels 7-9 (Emotion)
+    renderLevelButtons(7, 9, 'levels-7-9');
+    // Levels 10-12 (Bias)
+    renderLevelButtons(10, 12, 'levels-10-12');
+}
+
+function renderLevelButtons(start, end, containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    for (let i = start; i <= end; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'level-btn';
+        btn.textContent = `Level ${i}`;
+        
+        if (gameState.completedLevels.includes(i)) {
+            btn.classList.add('completed');
+        }
+        
+        // Lock levels that aren't unlocked yet
+        if (i > 1 && !gameState.completedLevels.includes(i - 1)) {
+            btn.classList.add('locked');
+            btn.disabled = true;
+        } else {
+            btn.onclick = () => startLevel(i);
+        }
+        
+        container.appendChild(btn);
+    }
+}
+
+// Start a Level
+function startLevel(level) {
+    gameState.currentLevel = level;
+    const config = levelConfig[level];
+    gameState.currentMode = config.mode;
+    
+    // Show appropriate intro screen for special modes (only on first level of that mode)
+    if (level === 7) {
+        showScreen('emotion-rules-screen');
+        return;
+    } else if (level === 10) {
+        showScreen('bias-intro-screen');
+        return;
+    }
+    
+    // Generate initial image and show observation screen
+    generateInitialImage(config.prompt);
+}
+
+// Generate Initial Image (simulated for now)
+async function generateInitialImage(prompt) {
+    const config = levelConfig[gameState.currentLevel];
+    
+    // Update level display (hidden now, but kept for potential use)
+    document.getElementById('current-level-display').textContent = getStageDisplayName();
+    document.getElementById('mode-display').textContent = getModeDisplayName();
+    
+    // Show loading
+    showScreen('regeneration-screen');
+    document.getElementById('prompt-display').textContent = 'Generating image...';
+    
+    try {
+        // Use Imagen API through Google AI Studio or alternative image generation
+        // For now, we'll use Pollinations.ai API which is free and works well with prompts
+        const imageUrl = await generateImageWithPollinations(prompt);
+        
+        gameState.originalImage = imageUrl;
+        gameState.originalImageDescription = prompt;
+        
+        // Set the image
+        document.getElementById('original-image').src = gameState.originalImage;
+        
+        // Configure screen based on mode with appropriate hints
+        if (config.mode === 'blind') {
+            setupBlindMode(config.viewTime);
+            document.getElementById('observation-hint').textContent = 'Memorize carefully - time is limited!';
+        } else if (config.mode === 'emotion') {
+            document.getElementById('timer-display').style.display = 'none';
+            document.getElementById('observation-hint').textContent = 'Focus only on emotions, mood, and atmosphere.';
+        } else {
+            document.getElementById('timer-display').style.display = 'none';
+            document.getElementById('observation-hint').textContent = 'Look for subject, action, environment, style, and mood.';
+        }
+        
+        showScreen('observation-screen');
+    } catch (error) {
+        console.error('Error generating image:', error);
+        alert('Failed to generate image. Using placeholder instead.');
+        
+        // Fallback to placeholder
+        gameState.originalImage = `https://via.placeholder.com/800x600/4dd0e1/ffffff?text=Level+${gameState.currentLevel}+Original`;
+        document.getElementById('original-image').src = gameState.originalImage;
+        
+        if (config.mode === 'blind') {
+            setupBlindMode(config.viewTime);
+        } else {
+            document.getElementById('timer-display').style.display = 'none';
+        }
+        
+        showScreen('observation-screen');
+    }
+}
+
+// Generate image using Pollinations.ai API (free, no API key needed)
+async function generateImageWithPollinations(prompt) {
+    // Pollinations.ai provides free AI image generation
+    const encodedPrompt = encodeURIComponent(prompt);
+    const seed = Math.floor(Math.random() * 1000000); // Random seed for variety
+    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&seed=${seed}&nologo=true`;
+}
+
+// Alternative: Use Google Gemini to enhance prompts, then generate with Pollinations
+async function enhancePromptWithGemini(basicPrompt) {
+    try {
+        const response = await fetch(`${CONFIG.GEMINI_IMAGE_API}?key=${CONFIG.GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: `Create a detailed, visual image description (max 50 words) for this concept: "${basicPrompt}". Focus on visual details, colors, composition, lighting, and style. Make it suitable for an AI image generator.`
+                    }]
+                }]
+            })
+        });
+        
+        const data = await response.json();
+        if (data.candidates && data.candidates[0]) {
+            return data.candidates[0].content.parts[0].text.trim();
+        }
+    } catch (error) {
+        console.error('Gemini API error:', error);
+    }
+    return basicPrompt; // Fallback to original prompt
+}
+
+function getModeDisplayName() {
+    const modes = {
+        'core': 'Core Prompt Mirror',
+        'blind': 'Blind Prompt Mode',
+        'emotion': 'Emotion-Only Mode',
+        'bias': 'Bias Spotter Mode'
+    };
+    return modes[gameState.currentMode] || '';
+}
+
+// Get friendly stage name without revealing level numbers
+function getStageDisplayName() {
+    const level = gameState.currentLevel;
+    if (level <= 3) return 'Getting Started';
+    if (level <= 6) return 'Memory Challenge';
+    if (level <= 9) return 'Emotional Journey';
+    return 'Critical Thinking';
+}
+
+// Blind Mode Timer
+function setupBlindMode(viewTime) {
+    let timeLeft = viewTime;
+    const timerDisplay = document.getElementById('timer-display');
+    timerDisplay.style.display = 'block';
+    timerDisplay.textContent = `${timeLeft}s`;
+    
+    gameState.timerInterval = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = `${timeLeft}s`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(gameState.timerInterval);
+            // Auto-advance to input screen
+            goToExtraction();
+        }
+    }, 1000);
+}
+
+// Go to Extraction Screen
+function goToExtraction() {
+    // Clear timer if running
+    if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+    }
+    
+    // Update display (hidden now)
+    document.getElementById('input-level-display').textContent = getStageDisplayName();
+    
+    const config = levelConfig[gameState.currentLevel];
+    
+    // Show or hide reference image based on mode
+    if (config.mode === 'blind') {
+        document.getElementById('side-image').style.display = 'none';
+        document.getElementById('image-placeholder').style.display = 'flex';
+    } else {
+        document.getElementById('side-image').style.display = 'block';
+        document.getElementById('side-image').src = gameState.originalImage;
+        document.getElementById('image-placeholder').style.display = 'none';
+    }
+    
+    // Update rule badge for emotion mode
+    if (config.mode === 'emotion') {
+        document.getElementById('rule-badge').innerHTML = `
+            <p>❌ No nouns</p>
+            <p>✅ Emotions only</p>
+        `;
+        document.getElementById('input-hint').textContent = 'Example: "Lonely", "Tense", "Peaceful"';
+    } else {
+        document.getElementById('rule-badge').innerHTML = `
+            <p>✓ Exactly 5 words</p>
+            <p>✓ One word per box</p>
+            <p>✓ No sentences</p>
+        `;
+        document.getElementById('input-hint').textContent = '';
+    }
+    
+    // Clear previous inputs
+    document.querySelectorAll('.word-input').forEach(input => {
+        input.value = '';
+    });
+    
+    showScreen('input-screen');
+}
+
+// Generate Image from User Words
+async function generateImage() {
+    // Collect user input
+    const inputs = document.querySelectorAll('.word-input');
+    gameState.userWords = Array.from(inputs).map(input => input.value.trim()).filter(word => word !== '');
+    
+    // Validate
+    if (gameState.userWords.length !== 5) {
+        alert('Please enter exactly 5 words!');
+        return;
+    }
+    
+    // Validate emotion mode
+    const config = levelConfig[gameState.currentLevel];
+    if (config.mode === 'emotion' && !validateEmotionWords(gameState.userWords)) {
+        alert('Please use only emotional words (no nouns or objects)!');
+        return;
+    }
+    
+    // Show loading screen
+    document.getElementById('prompt-display').textContent = gameState.userWords.join(', ');
+    showScreen('regeneration-screen');
+    
+    try {
+        // Generate image from user's 5 words
+        const userPrompt = gameState.userWords.join(' ');
+        
+        // Optional: Use Gemini to enhance the 5-word prompt into a detailed description
+        const enhancedPrompt = await enhancePromptWithGemini(userPrompt);
+        console.log('Enhanced prompt:', enhancedPrompt);
+        
+        // Generate image using the enhanced prompt
+        gameState.recreatedImage = await generateImageWithPollinations(enhancedPrompt);
+        
+        // Wait a moment for effect
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Go to appropriate comparison screen
+        if (config.mode === 'bias') {
+            showBiasDetection();
+        } else {
+            showComparison();
+        }
+    } catch (error) {
+        console.error('Error generating recreated image:', error);
+        
+        // Fallback to placeholder
+        gameState.recreatedImage = `https://via.placeholder.com/800x600/4dd0e1/ffffff?text=Recreated:+${gameState.userWords.join('+')}`;
+        
+        setTimeout(() => {
+            if (config.mode === 'bias') {
+                showBiasDetection();
+            } else {
+                showComparison();
+            }
+        }, 2000);
+    }
+}
+
+function validateEmotionWords(words) {
+    // List of common nouns to reject (simplified for demo)
+    const bannedNouns = ['person', 'people', 'man', 'woman', 'car', 'house', 'tree', 'dog', 'cat', 'table', 'chair', 'book'];
+    
+    for (let word of words) {
+        if (bannedNouns.includes(word.toLowerCase())) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Show Comparison Screen
+function showComparison() {
+    const config = levelConfig[gameState.currentLevel];
+    
+    // Hide level header, show stage name instead
+    document.getElementById('comparison-level-display').textContent = getStageDisplayName();
+    document.getElementById('original-comparison').src = gameState.originalImage;
+    document.getElementById('recreated-comparison').src = gameState.recreatedImage;
+    
+    // Update reflection prompts based on mode
+    const reflectionDiv = document.getElementById('reflection-prompts');
+    
+    if (config.mode === 'blind') {
+        reflectionDiv.innerHTML = `
+            <h3>Reflection:</h3>
+            <p>• What did memory distort?</p>
+            <p>• What did you assume incorrectly?</p>
+            <p>• What details were preserved?</p>
+        `;
+    } else if (config.mode === 'emotion') {
+        reflectionDiv.innerHTML = `
+            <h3>Reflection:</h3>
+            <p>• How did AI visualize emotion?</p>
+            <p>• Did AI invent objects?</p>
+            <p>• Which emotion translated best?</p>
+        `;
+    } else {
+        reflectionDiv.innerHTML = `
+            <h3>Reflection:</h3>
+            <p>• What detail was lost?</p>
+            <p>• What was preserved?</p>
+            <p>• Which word mattered most?</p>
+        `;
+    }
+    
+    showScreen('comparison-screen');
+}
+
+// Next Level - Now goes to Learning Screen first
+function nextLevel() {
+    const config = levelConfig[gameState.currentLevel];
+    
+    // Skip learning screen for bias mode
+    if (config.mode === 'bias') {
+        proceedToNextChallenge();
+        return;
+    }
+    
+    // Show learning screen
+    showLearningScreen();
+}
+
+// Show Learning Screen with AI Analysis
+async function showLearningScreen() {
+    showScreen('learning-screen');
+    
+    // Display user's words
+    const userWordsContainer = document.getElementById('user-words-display');
+    userWordsContainer.innerHTML = gameState.userWords.map(word => 
+        `<span class="word-tag">${word}</span>`
+    ).join('');
+    
+    // Set images
+    document.getElementById('learning-original').src = gameState.originalImage;
+    document.getElementById('learning-recreated').src = gameState.recreatedImage;
+    
+    // Get AI analysis using Gemini
+    await getAIFeedback();
+}
+
+// Get AI Feedback using Gemini API
+async function getAIFeedback() {
+    const config = levelConfig[gameState.currentLevel];
+    const originalPrompt = config.prompt;
+    const userWords = gameState.userWords.join(', ');
+    
+    try {
+        // Create detailed prompt for Gemini
+        const analysisPrompt = `You are an AI prompt engineering teacher. 
+
+Original scene description: "${originalPrompt}"
+User's 5 words: "${userWords}"
+
+Analyze the user's word choices and provide:
+1. SUGGESTED_WORDS: Suggest 5 better words that would recreate the original scene more accurately (format: word1, word2, word3, word4, word5)
+2. INSIGHTS: Write 2-3 sentences explaining what the user captured well and what they missed
+3. TIPS: Provide exactly 3 actionable tips for improvement (each tip should be one sentence)
+
+Format your response EXACTLY like this:
+SUGGESTED_WORDS: word1, word2, word3, word4, word5
+INSIGHTS: Your insights here
+TIPS:
+- Tip 1
+- Tip 2
+- Tip 3`;
+
+        const response = await fetch(`${CONFIG.GEMINI_IMAGE_API}?key=${CONFIG.GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: analysisPrompt
+                    }]
+                }]
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.candidates && data.candidates[0]) {
+            const feedbackText = data.candidates[0].content.parts[0].text;
+            parseFeedback(feedbackText);
+        } else {
+            showFallbackFeedback();
+        }
+    } catch (error) {
+        console.error('Error getting AI feedback:', error);
+        showFallbackFeedback();
+    }
+}
+
+// Parse and display the feedback from Gemini
+function parseFeedback(feedbackText) {
+    // Extract suggested words
+    const suggestedMatch = feedbackText.match(/SUGGESTED_WORDS:\s*(.+)/i);
+    if (suggestedMatch) {
+        const suggestedWords = suggestedMatch[1].split(',').map(w => w.trim()).slice(0, 5);
+        const suggestedContainer = document.getElementById('suggested-words-display');
+        suggestedContainer.innerHTML = suggestedWords.map(word => 
+            `<span class="word-tag suggested">${word}</span>`
+        ).join('');
+    }
+    
+    // Extract insights
+    const insightsMatch = feedbackText.match(/INSIGHTS:\s*(.+?)(?=TIPS:|$)/is);
+    if (insightsMatch) {
+        document.getElementById('ai-insights').innerHTML = insightsMatch[1].trim();
+    }
+    
+    // Extract tips
+    const tipsMatch = feedbackText.match(/TIPS:\s*(.+)/is);
+    if (tipsMatch) {
+        const tips = tipsMatch[1].split('\n')
+            .filter(line => line.trim().startsWith('-'))
+            .map(line => line.replace(/^-\s*/, '').trim());
+        
+        const tipsContainer = document.getElementById('tips-list');
+        tipsContainer.innerHTML = tips.map(tip => 
+            `<div class="tip-item">${tip}</div>`
+        ).join('');
+    }
+}
+
+// Fallback feedback if API fails
+function showFallbackFeedback() {
+    const config = levelConfig[gameState.currentLevel];
+    
+    // Simple fallback suggestions
+    const fallbackWords = ['detailed', 'atmospheric', 'vivid', 'cinematic', 'striking'];
+    document.getElementById('suggested-words-display').innerHTML = fallbackWords.map(word => 
+        `<span class="word-tag suggested">${word}</span>`
+    ).join('');
+    
+    document.getElementById('ai-insights').innerHTML = 
+        `Your words captured some key elements! To improve, try being more specific about colors, lighting, and composition. Think about what makes the scene unique.`;
+    
+    document.getElementById('tips-list').innerHTML = `
+        <div class="tip-item"><strong>Be Specific:</strong> Instead of "nice", try "golden" or "soft"</div>
+        <div class="tip-item"><strong>Include Context:</strong> Mention the setting, time of day, or atmosphere</div>
+        <div class="tip-item"><strong>Think Visual:</strong> Focus on what you can see - colors, shapes, lighting</div>
+    `;
+}
+
+// Proceed to Next Challenge
+function proceedToNextChallenge() {
+    // Mark current level as completed
+    if (!gameState.completedLevels.includes(gameState.currentLevel)) {
+        gameState.completedLevels.push(gameState.currentLevel);
+        updateProgressDisplay();
+    }
+    
+    // Check if all levels completed
+    if (gameState.currentLevel === 12) {
+        showScreen('progress-screen');
+        return;
+    }
+    
+    // Move to next level
+    gameState.currentLevel++;
+    startLevel(gameState.currentLevel);
+}
+
+// Bias Detection
+function showBiasDetection() {
+    // Hide level number
+    document.getElementById('bias-level-display').textContent = getStageDisplayName();
+    document.getElementById('original-bias').src = gameState.originalImage;
+    document.getElementById('recreated-bias').src = gameState.recreatedImage;
+    
+    // Reset selection
+    gameState.selectedBias = null;
+    document.querySelectorAll('.btn-option').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    showScreen('bias-detection-screen');
+}
+
+function selectBias(type) {
+    gameState.selectedBias = type;
+    
+    // Update button states
+    document.querySelectorAll('.btn-option').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    event.target.classList.add('selected');
+    
+    // Show feedback after brief delay
+    setTimeout(() => {
+        showBiasFeedback(type);
+    }, 500);
+}
+
+function showBiasFeedback(selectedType) {
+    const config = levelConfig[gameState.currentLevel];
+    const actualBias = config.biasType || 'none';
+    
+    // Determine if correct
+    const correct = (selectedType === actualBias) || 
+                   (selectedType === 'visual' && actualBias === 'gender') ||
+                   (selectedType === 'cultural' && actualBias === 'cultural') ||
+                   (selectedType === 'stereotype' && actualBias === 'stereotype');
+    
+    document.getElementById('bias-detected').textContent = correct ? 'Yes' : 'Maybe';
+    document.getElementById('bias-type').textContent = 
+        correct ? formatBiasType(actualBias) : 'Review the comparison again';
+    
+    showScreen('bias-feedback-screen');
+}
+
+function formatBiasType(type) {
+    const types = {
+        'gender': 'Gender Bias',
+        'cultural': 'Cultural Bias',
+        'stereotype': 'Role Stereotype',
+        'none': 'No Significant Bias'
+    };
+    return types[type] || type;
+}
+
+// Update Progress Display
+function updateProgressDisplay() {
+    const completed = gameState.completedLevels.length;
+    document.getElementById('levels-completed').textContent = completed;
+    
+    const progressBar = document.getElementById('progress-bar');
+    const percentage = (completed / 12) * 100;
+    progressBar.style.width = percentage + '%';
+    
+    // Unlock skills based on progress
+    if (completed >= 3) {
+        document.getElementById('skill-observation').classList.add('unlocked');
+    }
+    if (completed >= 6) {
+        document.getElementById('skill-memory').classList.add('unlocked');
+    }
+    if (completed >= 9) {
+        document.getElementById('skill-emotion').classList.add('unlocked');
+    }
+    if (completed >= 12) {
+        document.getElementById('skill-bias').classList.add('unlocked');
+    }
+    
+    // Show progress screen at milestones (every 3 levels)
+    if (completed > 0 && completed % 3 === 0 && completed < 12) {
+        return true; // Signal to show progress
+    }
+    return false;
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', initGame);

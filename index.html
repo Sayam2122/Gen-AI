@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Mirror - See → Decode → Recreate</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- SCREEN 1: Landing Screen -->
+    <div id="landing-screen" class="screen active">
+        <div class="container">
+            <h1 class="title">Prompt Mirror</h1>
+            <p class="tagline">See → Decode → Recreate</p>
+            <div class="description">
+                <p>An AI shows you an image.</p>
+                <p>You extract the words that matter.</p>
+                <p>AI recreates the image using only your words.</p>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="startLevel(1)">Start Game</button>
+                <button class="btn btn-secondary" onclick="showScreen('how-to-play-screen')">How to Play</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: How to Play -->
+    <div id="how-to-play-screen" class="screen">
+        <div class="container">
+            <h2>How to Play</h2>
+            <div class="cards">
+                <div class="card">
+                    <div class="step-number">1</div>
+                    <h3>Observe the AI-generated image</h3>
+                </div>
+                <div class="card">
+                    <div class="step-number">2</div>
+                    <h3>Identify exactly 5 key words</h3>
+                </div>
+                <div class="card">
+                    <div class="step-number">3</div>
+                    <h3>AI regenerates an image from your words</h3>
+                </div>
+                <div class="card">
+                    <div class="step-number">4</div>
+                    <h3>Compare and learn what AI understood</h3>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="startLevel(1)">Begin Level 1</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 3: Level Select Screen -->
+    <div id="level-select-screen" class="screen">
+        <div class="container">
+            <h2>Select Level</h2>
+            <p class="subtitle">Each level increases difficulty and constraints.</p>
+            
+            <div class="level-groups">
+                <div class="level-group">
+                    <h3>Core Prompt Mirror</h3>
+                    <div class="level-buttons" id="levels-1-3"></div>
+                </div>
+                
+                <div class="level-group">
+                    <h3>Blind Prompt Mode</h3>
+                    <div class="level-buttons" id="levels-4-6"></div>
+                </div>
+                
+                <div class="level-group">
+                    <h3>Emotion-Only Mode</h3>
+                    <div class="level-buttons" id="levels-7-9"></div>
+                </div>
+                
+                <div class="level-group">
+                    <h3>Bias Spotter Mode</h3>
+                    <div class="level-buttons" id="levels-10-12"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 4: Image Observation (Core Mode) -->
+    <div id="observation-screen" class="screen">
+        <div class="container">
+            <div class="level-header" style="display: none;">
+                <span id="current-level-display">Level 1</span>
+                <span id="mode-display">Core Prompt Mirror</span>
+            </div>
+            <div class="image-container">
+                <img id="original-image" src="" alt="AI Generated Image">
+                <div id="timer-display" class="timer"></div>
+            </div>
+            <p class="hint" id="observation-hint">Look for subject, action, environment, style, and mood.</p>
+            <button class="btn btn-primary" id="extract-btn" onclick="goToExtraction()">Extract 5 Words</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 5: 5-Word Input Screen -->
+    <div id="input-screen" class="screen">
+        <div class="container">
+            <div class="level-header" style="display: none;">
+                <span id="input-level-display">Level 1</span>
+            </div>
+            <div class="input-layout">
+                <div class="side-image" id="side-image-container">
+                    <img id="side-image" src="" alt="Reference Image">
+                    <div class="image-placeholder" id="image-placeholder">Image hidden</div>
+                </div>
+                <div class="input-section">
+                    <h3>Enter Your 5 Words</h3>
+                    <div class="word-inputs">
+                        <input type="text" class="word-input" maxlength="30" placeholder="Word 1">
+                        <input type="text" class="word-input" maxlength="30" placeholder="Word 2">
+                        <input type="text" class="word-input" maxlength="30" placeholder="Word 3">
+                        <input type="text" class="word-input" maxlength="30" placeholder="Word 4">
+                        <input type="text" class="word-input" maxlength="30" placeholder="Word 5">
+                    </div>
+                    <div class="rules">
+                        <div class="rule-badge" id="rule-badge">
+                            <p>✓ Exactly 5 words</p>
+                            <p>✓ One word per box</p>
+                            <p>✓ No sentences</p>
+                        </div>
+                        <p class="hint-small" id="input-hint"></p>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateImage()">Generate Image</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 6: AI Regeneration Screen -->
+    <div id="regeneration-screen" class="screen">
+        <div class="container">
+            <h2>AI is recreating the image using your 5 words.</h2>
+            <div class="loading-animation">
+                <div class="spinner"></div>
+            </div>
+            <div class="prompt-used">
+                <h3>Prompt Used:</h3>
+                <p id="prompt-display"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 7: Comparison Screen -->
+    <div id="comparison-screen" class="screen">
+        <div class="container">
+            <div class="level-header" style="display: none;">
+                <span id="comparison-level-display">Level 1</span>
+            </div>
+            <h2>Compare the Results</h2>
+            <div class="comparison-layout">
+                <div class="comparison-image">
+                    <h3>Original Image</h3>
+                    <img id="original-comparison" src="" alt="Original">
+                </div>
+                <div class="comparison-image">
+                    <h3>Recreated Image</h3>
+                    <img id="recreated-comparison" src="" alt="Recreated">
+                </div>
+            </div>
+            <div class="reflection" id="reflection-prompts">
+                <h3>Reflection:</h3>
+                <p>• What detail was lost?</p>
+                <p>• What was preserved?</p>
+                <p>• Which word mattered most?</p>
+            </div>
+            <button class="btn btn-primary" onclick="nextLevel()">Continue</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 12: Emotion Rules Screen -->
+    <div id="emotion-rules-screen" class="screen">
+        <div class="container">
+            <h2>Emotion-Only Mode</h2>
+            <div class="rules-panel">
+                <p class="large-text">You are NOT allowed to describe objects.</p>
+                <div class="rules-columns">
+                    <div class="allowed">
+                        <h3>✅ Allowed:</h3>
+                        <ul>
+                            <li>Emotions</li>
+                            <li>Mood</li>
+                            <li>Atmosphere</li>
+                            <li>Feeling</li>
+                        </ul>
+                    </div>
+                    <div class="not-allowed">
+                        <h3>❌ Not Allowed:</h3>
+                        <ul>
+                            <li>People</li>
+                            <li>Objects</li>
+                            <li>Places</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="startLevel(7)">Start Level 7</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 16: Bias Introduction Screen -->
+    <div id="bias-intro-screen" class="screen">
+        <div class="container">
+            <h2>Bias Spotter Mode</h2>
+            <div class="intro-panel">
+                <p class="large-text">AI sometimes adds assumptions that were never in the image.</p>
+                <h3>Your task:</h3>
+                <p>Identify where AI added bias or stereotypes.</p>
+            </div>
+            <button class="btn btn-primary" onclick="startLevel(10)">Start Level 10</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 17: Bias Detection Screen -->
+    <div id="bias-detection-screen" class="screen">
+        <div class="container">
+            <div class="level-header" style="display: none;">
+                <span id="bias-level-display">Level 10</span>
+            </div>
+            <h2>Spot the Bias</h2>
+            <div class="comparison-layout">
+                <div class="comparison-image">
+                    <h3>Original Image</h3>
+                    <img id="original-bias" src="" alt="Original">
+                </div>
+                <div class="comparison-image">
+                    <h3>Recreated Image</h3>
+                    <img id="recreated-bias" src="" alt="Recreated">
+                </div>
+            </div>
+            <div class="bias-questions">
+                <h3>Question Prompts:</h3>
+                <p>• What did AI add that wasn't shown?</p>
+                <p>• Did AI assume gender, culture, or setting?</p>
+                <h3>Select what you observe:</h3>
+                <div class="bias-options">
+                    <button class="btn-option" onclick="selectBias('visual')">Visual Bias</button>
+                    <button class="btn-option" onclick="selectBias('cultural')">Cultural Bias</button>
+                    <button class="btn-option" onclick="selectBias('stereotype')">Role Stereotype</button>
+                    <button class="btn-option" onclick="selectBias('none')">No Bias Detected</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 18: Bias Feedback Screen -->
+    <div id="bias-feedback-screen" class="screen">
+        <div class="container">
+            <h2>Bias Analysis</h2>
+            <div class="bias-insight-panel">
+                <div class="insight-result">
+                    <h3>Bias detected: <span id="bias-detected">Yes</span></h3>
+                    <p><strong>Type:</strong> <span id="bias-type">Cultural Bias</span></p>
+                    <div class="bias-highlight" id="bias-highlight"></div>
+                </div>
+                <div class="learning-text">
+                    <h3>Learning:</h3>
+                    <p>This shows how AI fills gaps using training data. AI models can sometimes introduce assumptions based on patterns they learned, even when those details weren't in the original prompt.</p>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="nextLevel()">Continue</button>
+        </div>
+    </div>
+
+    <!-- NEW SCREEN: Learning/Review Screen -->
+    <div id="learning-screen" class="screen">
+        <div class="container">
+            <h2>Learn & Improve</h2>
+            
+            <div class="learning-comparison">
+                <div class="comparison-side">
+                    <h3>Your 5 Words:</h3>
+                    <div class="words-display" id="user-words-display"></div>
+                </div>
+                <div class="comparison-side">
+                    <h3>AI Suggested Words:</h3>
+                    <div class="words-display" id="suggested-words-display">
+                        <div class="loading-small">
+                            <div class="spinner-small"></div>
+                            <p>Analyzing...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="learning-insights">
+                <h3>💡 Insights:</h3>
+                <div class="insight-box" id="ai-insights">
+                    <div class="loading-small">
+                        <div class="spinner-small"></div>
+                        <p>Getting personalized feedback...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="learning-images">
+                <div class="learning-image">
+                    <h4>Original Image</h4>
+                    <img id="learning-original" src="" alt="Original">
+                </div>
+                <div class="learning-image">
+                    <h4>Your Recreation</h4>
+                    <img id="learning-recreated" src="" alt="Recreated">
+                </div>
+            </div>
+
+            <div class="learning-tips">
+                <h3>🎯 Key Takeaways:</h3>
+                <div class="tips-list" id="tips-list"></div>
+            </div>
+
+            <button class="btn btn-primary" onclick="proceedToNextChallenge()">Continue to Next Challenge</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 19: Final Progress Screen -->
+    <div id="progress-screen" class="screen">
+        <div class="container">
+            <h2>Your Journey</h2>
+            <div class="progress-container">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-bar"></div>
+                </div>
+                <p class="progress-text">Challenges Completed: <span id="levels-completed">0</span> / 12</p>
+            </div>
+            <div class="skills-panel">
+                <h3>Skills Unlocked:</h3>
+                <div class="skills-grid">
+                    <div class="skill-badge unlocked" id="skill-observation">
+                        <span class="skill-icon">👁️</span>
+                        <p>Observation</p>
+                    </div>
+                    <div class="skill-badge" id="skill-memory">
+                        <span class="skill-icon">🧠</span>
+                        <p>Memory</p>
+                    </div>
+                    <div class="skill-badge" id="skill-emotion">
+                        <span class="skill-icon">💭</span>
+                        <p>Emotional Prompting</p>
+                    </div>
+                    <div class="skill-badge" id="skill-bias">
+                        <span class="skill-icon">🔍</span>
+                        <p>Bias Detection</p>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="nextLevel()">Continue</button>
+            <button class="btn btn-secondary" onclick="showScreen('landing-screen')">Back to Home</button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
