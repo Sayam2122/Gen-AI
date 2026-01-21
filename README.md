@@ -4,7 +4,11 @@
 
 An interactive single-player web game that teaches AI image prompting through 12 progressive challenges. Players observe AI-generated images, extract key words, and discover how AI recreates images from their descriptions.
 
-## 🎮 Game Modes
+## � Live Demo
+
+**Play Now**: [https://gen-ai-three-lake.vercel.app/](https://gen-ai-three-lake.vercel.app/)
+
+## �🎮 Game Modes
 
 ### 📝 Levels 1-3: Core Prompt Mirror (Basic Mode)
 Learn the fundamentals of AI prompting by describing images with exactly 5 words.
