@@ -79,8 +79,6 @@ function renderLevelGrid() {
         
         if (isLocked) {
             levelCard.classList.add('locked');
-        } else {
-            levelCard.onclick = () => startLevel(i);
         }
         
         levelCard.innerHTML = `
@@ -89,6 +87,11 @@ function renderLevelGrid() {
             <div class="level-title">${levelTitles[i]}</div>
             <div class="level-mode">${levelModes[i]}</div>
         `;
+        
+        // Add click handler after setting innerHTML
+        if (!isLocked) {
+            levelCard.onclick = () => startLevel(i);
+        }
         
         levelsGrid.appendChild(levelCard);
     }
