@@ -424,24 +424,24 @@ async function getAIFeedback() {
     
     try {
         // Create detailed prompt for Gemini
-        const analysisPrompt = `You are an AI prompt engineering teacher. 
+        const analysisPrompt = `You are an AI prompt engineering teacher analyzing a student's image prompt.
 
-Original scene description: "${originalPrompt}"
-User's 5 words: "${userWords}"
+ORIGINAL SCENE: "${originalPrompt}"
+STUDENT'S 5 WORDS: "${userWords}"
 
-Analyze the user's word choices and provide:
-1. SUGGESTED_WORDS: Suggest 5 better words that would recreate the original scene more accurately (format: word1, word2, word3, word4, word5)
-2. INSIGHTS: Write 2-3 sentences explaining what the user captured well and what they missed
-3. TIPS: Provide exactly 3 actionable tips for improvement (each tip should be one sentence)
+Provide feedback in this EXACT format (don't add extra text or explanations):
 
-Format your response EXACTLY like this:
 SUGGESTED_WORDS: word1, word2, word3, word4, word5
-INSIGHTS: Your insights here
-TIPS:
-- Tip 1
-- Tip 2
-- Tip 3`;
 
+INSIGHTS: Write 2-3 clear sentences explaining what the student did well and what they could improve. Focus on specific details about their word choices.
+
+TIPS:
+- First specific tip about word choice or description technique
+- Second specific tip about capturing visual details
+- Third specific tip about improving prompt effectiveness`;
+
+        console.log('Sending request to Gemini API...');
+        
         const response = await fetch(`${CONFIG.GEMINI_IMAGE_API}?key=${CONFIG.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
@@ -452,16 +452,27 @@ TIPS:
                     parts: [{
                         text: analysisPrompt
                     }]
-                }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 500
+                }
             })
         });
         
-        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
         
-        if (data.candidates && data.candidates[0]) {
+        const data = await response.json();
+        console.log('Gemini API response:', data);
+        
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
             const feedbackText = data.candidates[0].content.parts[0].text;
+            console.log('Feedback text:', feedbackText);
             parseFeedback(feedbackText);
         } else {
+            console.warn('No valid candidates in response');
             showFallbackFeedback();
         }
     } catch (error) {
@@ -472,53 +483,107 @@ TIPS:
 
 // Parse and display the feedback from Gemini
 function parseFeedback(feedbackText) {
-    // Extract suggested words
-    const suggestedMatch = feedbackText.match(/SUGGESTED_WORDS:\s*(.+)/i);
+    console.log('Parsing feedback:', feedbackText);
+    
+    let successCount = 0;
+    
+    // Extract suggested words - try multiple patterns
+    const suggestedMatch = feedbackText.match(/SUGGESTED_WORDS:\s*([^\n]+)/i);
     if (suggestedMatch) {
-        const suggestedWords = suggestedMatch[1].split(',').map(w => w.trim()).slice(0, 5);
-        const suggestedContainer = document.getElementById('suggested-words-display');
-        suggestedContainer.innerHTML = suggestedWords.map(word => 
-            `<span class="word-tag suggested">${word}</span>`
-        ).join('');
-    }
-    
-    // Extract insights
-    const insightsMatch = feedbackText.match(/INSIGHTS:\s*(.+?)(?=TIPS:|$)/is);
-    if (insightsMatch) {
-        document.getElementById('ai-insights').innerHTML = insightsMatch[1].trim();
-    }
-    
-    // Extract tips
-    const tipsMatch = feedbackText.match(/TIPS:\s*(.+)/is);
-    if (tipsMatch) {
-        const tips = tipsMatch[1].split('\n')
-            .filter(line => line.trim().startsWith('-'))
-            .map(line => line.replace(/^-\s*/, '').trim());
+        const wordsLine = suggestedMatch[1].trim();
+        // Remove any trailing periods or extra text
+        const cleanWords = wordsLine.split(/[,\n]/)[0].split(',');
+        const suggestedWords = cleanWords.map(w => w.trim()).filter(w => w.length > 0).slice(0, 5);
         
-        const tipsContainer = document.getElementById('tips-list');
-        tipsContainer.innerHTML = tips.map(tip => 
-            `<div class="tip-item">${tip}</div>`
-        ).join('');
+        if (suggestedWords.length > 0) {
+            const suggestedContainer = document.getElementById('suggested-words-display');
+            suggestedContainer.innerHTML = suggestedWords.map(word => 
+                `<span class="word-tag suggested">${word}</span>`
+            ).join('');
+            successCount++;
+        }
+    }
+    
+    // Extract insights - be more flexible with the pattern
+    const insightsMatch = feedbackText.match(/INSIGHTS:\s*([^]*?)(?=\n\s*TIPS:|$)/i);
+    if (insightsMatch) {
+        const insights = insightsMatch[1].trim();
+        if (insights.length > 0) {
+            document.getElementById('ai-insights').innerHTML = `<p>${insights}</p>`;
+            successCount++;
+        }
+    }
+    
+    // Extract tips - handle various bullet formats
+    const tipsMatch = feedbackText.match(/TIPS:\s*([^]*?)$/i);
+    if (tipsMatch) {
+        const tipsText = tipsMatch[1];
+        // Match lines that start with -, •, *, or numbers
+        const tips = tipsText.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.match(/^[-•*\d][.)]\s*.+/))
+            .map(line => line.replace(/^[-•*\d][.)]\s*/, '').trim())
+            .filter(tip => tip.length > 0)
+            .slice(0, 3);
+        
+        if (tips.length > 0) {
+            const tipsContainer = document.getElementById('tips-list');
+            tipsContainer.innerHTML = tips.map(tip => 
+                `<div class="tip-item">${tip}</div>`
+            ).join('');
+            successCount++;
+        }
+    }
+    
+    // If parsing failed, show fallback
+    if (successCount === 0) {
+        console.warn('Could not parse feedback, using fallback');
+        showFallbackFeedback();
     }
 }
 
 // Fallback feedback if API fails
 function showFallbackFeedback() {
     const config = levelConfig[gameState.currentLevel];
+    const originalPrompt = config.prompt;
     
-    // Simple fallback suggestions
-    const fallbackWords = ['detailed', 'atmospheric', 'vivid', 'cinematic', 'striking'];
+    console.log('Using fallback feedback');
+    
+    // Extract key concepts from original prompt for better fallback
+    const promptWords = originalPrompt.toLowerCase().split(' ');
+    let fallbackWords = [];
+    
+    // Intelligent fallback based on prompt content
+    if (originalPrompt.includes('mountain') || originalPrompt.includes('landscape')) {
+        fallbackWords = ['majestic', 'golden', 'serene', 'distant', 'peaks'];
+    } else if (originalPrompt.includes('city') || originalPrompt.includes('street')) {
+        fallbackWords = ['bustling', 'urban', 'crowded', 'vibrant', 'modern'];
+    } else if (originalPrompt.includes('underwater') || originalPrompt.includes('ocean')) {
+        fallbackWords = ['turquoise', 'coral', 'tropical', 'vibrant', 'flowing'];
+    } else if (originalPrompt.includes('coffee') || originalPrompt.includes('interior')) {
+        fallbackWords = ['cozy', 'warm', 'ambient', 'intimate', 'wooden'];
+    } else {
+        fallbackWords = ['detailed', 'atmospheric', 'vivid', 'cinematic', 'striking'];
+    }
+    
+    // Display suggested words
     document.getElementById('suggested-words-display').innerHTML = fallbackWords.map(word => 
         `<span class="word-tag suggested">${word}</span>`
     ).join('');
     
-    document.getElementById('ai-insights').innerHTML = 
-        `Your words captured some key elements! To improve, try being more specific about colors, lighting, and composition. Think about what makes the scene unique.`;
+    // Context-aware insights
+    const userWords = gameState.userWords.join(', ');
+    document.getElementById('ai-insights').innerHTML = `
+        <p>Your words "${userWords}" captured some elements of the scene. To get closer to the original, 
+        try being more specific about colors, lighting, and the overall mood. Think about what makes this 
+        particular scene unique and distinctive.</p>
+    `;
     
+    // General but useful tips
     document.getElementById('tips-list').innerHTML = `
-        <div class="tip-item"><strong>Be Specific:</strong> Instead of "nice", try "golden" or "soft"</div>
-        <div class="tip-item"><strong>Include Context:</strong> Mention the setting, time of day, or atmosphere</div>
-        <div class="tip-item"><strong>Think Visual:</strong> Focus on what you can see - colors, shapes, lighting</div>
+        <div class="tip-item"><strong>Be Specific:</strong> Replace general words like "nice" or "good" with vivid descriptors like "golden", "dramatic", or "ethereal"</div>
+        <div class="tip-item"><strong>Include Atmosphere:</strong> Mention lighting (sunset, dim, bright), mood (peaceful, tense, joyful), or time of day</div>
+        <div class="tip-item"><strong>Visual Details Matter:</strong> Focus on what you can see - colors, textures, composition, and scale help AI understand better</div>
     `;
 }
 
