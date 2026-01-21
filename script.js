@@ -546,24 +546,106 @@ function parseFeedback(feedbackText) {
 function showFallbackFeedback() {
     const config = levelConfig[gameState.currentLevel];
     const originalPrompt = config.prompt;
+    const mode = config.mode;
     
     console.log('Using fallback feedback');
     
     // Extract key concepts from original prompt for better fallback
-    const promptWords = originalPrompt.toLowerCase().split(' ');
     let fallbackWords = [];
+    let specificInsights = '';
+    let specificTips = [];
     
-    // Intelligent fallback based on prompt content
-    if (originalPrompt.includes('mountain') || originalPrompt.includes('landscape')) {
-        fallbackWords = ['majestic', 'golden', 'serene', 'distant', 'peaks'];
-    } else if (originalPrompt.includes('city') || originalPrompt.includes('street')) {
-        fallbackWords = ['bustling', 'urban', 'crowded', 'vibrant', 'modern'];
-    } else if (originalPrompt.includes('underwater') || originalPrompt.includes('ocean')) {
-        fallbackWords = ['turquoise', 'coral', 'tropical', 'vibrant', 'flowing'];
-    } else if (originalPrompt.includes('coffee') || originalPrompt.includes('interior')) {
-        fallbackWords = ['cozy', 'warm', 'ambient', 'intimate', 'wooden'];
+    // Level-specific feedback based on the actual prompts
+    if (gameState.currentLevel === 1) {
+        // "A peaceful mountain landscape at sunset"
+        fallbackWords = ['peaceful', 'mountain', 'sunset', 'golden', 'majestic'];
+        specificInsights = `For this mountain sunset scene, capturing the time of day (sunset) and mood (peaceful) are crucial. Your words "${gameState.userWords.join(', ')}" ${gameState.userWords.includes('sunset') || gameState.userWords.includes('peaceful') ? 'captured key elements!' : 'could be more specific about the lighting and atmosphere.'}`;
+        specificTips = [
+            '<strong>Time of Day:</strong> Words like "sunset", "dusk", or "golden hour" immediately set the lighting and mood',
+            '<strong>Natural Elements:</strong> Mention "mountain", "landscape", or "peaks" to establish the setting clearly',
+            '<strong>Mood Words:</strong> "Peaceful", "serene", or "tranquil" help convey the atmosphere of the scene'
+        ];
+    } else if (gameState.currentLevel === 2) {
+        // "A busy city street with people and cars"
+        fallbackWords = ['busy', 'urban', 'crowded', 'street', 'bustling'];
+        specificInsights = `This urban scene requires words that convey activity and density. Your words "${gameState.userWords.join(', ')}" ${gameState.userWords.includes('busy') || gameState.userWords.includes('city') ? 'captured the urban setting!' : 'could emphasize the activity and city environment more.'}`;
+        specificTips = [
+            '<strong>Activity Level:</strong> Use "busy", "crowded", or "bustling" to show the energy of the scene',
+            '<strong>Urban Context:</strong> Words like "city", "street", or "urban" establish the metropolitan setting',
+            '<strong>Elements Present:</strong> Mentioning "people", "cars", or "traffic" adds important context about what\'s in the scene'
+        ];
+    } else if (gameState.currentLevel === 3) {
+        // "An underwater scene with colorful coral and tropical fish"
+        fallbackWords = ['underwater', 'colorful', 'coral', 'tropical', 'vibrant'];
+        specificInsights = `This underwater scene needs words about location and colors. Your words "${gameState.userWords.join(', ')}" ${gameState.userWords.includes('underwater') || gameState.userWords.includes('coral') ? 'captured the underwater theme!' : 'could be more specific about the aquatic setting and marine life.'}`;
+        specificTips = [
+            '<strong>Environment:</strong> "Underwater", "ocean", or "reef" immediately tells AI the setting is aquatic',
+            '<strong>Color Descriptions:</strong> "Colorful", "vibrant", or "turquoise" capture the vivid underwater palette',
+            '<strong>Marine Life:</strong> Words like "coral", "fish", or "tropical" specify what creatures and plants are present'
+        ];
+    } else if (gameState.currentLevel === 4 || gameState.currentLevel === 5 || gameState.currentLevel === 6) {
+        // Blind mode - memory-focused tips
+        if (originalPrompt.includes('coffee')) {
+            fallbackWords = ['cozy', 'warm', 'coffee', 'interior', 'ambient'];
+            specificInsights = `In blind mode, you had to remember this cozy interior from memory. The key is capturing the atmosphere and defining features quickly.`;
+            specificTips = [
+                '<strong>First Impressions:</strong> Note the overall mood first - "cozy", "warm", or "intimate" for interior spaces',
+                '<strong>Defining Features:</strong> What made it memorable? "Coffee shop", "shelves", "lighting" are key identifiers',
+                '<strong>Atmosphere:</strong> Temperature words like "warm" or lighting words like "dim" or "golden" help recreate the feeling'
+            ];
+        } else if (originalPrompt.includes('library')) {
+            fallbackWords = ['vintage', 'library', 'books', 'tall', 'shelves'];
+            specificInsights = `From memory, focus on the most distinctive elements - the tall bookshelves and vintage character of this library.`;
+            specificTips = [
+                '<strong>Scale Words:</strong> "Tall", "grand", or "massive" convey the impressive size of elements',
+                '<strong>Age/Style:</strong> "Vintage", "classic", or "old" capture the historical character',
+                '<strong>Key Objects:</strong> "Books", "shelves", "library" are essential nouns that define the space'
+            ];
+        } else {
+            fallbackWords = ['modern', 'gallery', 'art', 'spacious', 'white'];
+            specificInsights = `Memory challenges require focusing on 2-3 most striking features. What stood out most to you?`;
+            specificTips = [
+                '<strong>Architectural Style:</strong> "Modern", "contemporary", or "minimalist" set the design tone',
+                '<strong>Space Quality:</strong> "Spacious", "open", or "airy" describe the feel of the room',
+                '<strong>Distinctive Elements:</strong> What was most memorable? Colors, objects, or unique features'
+            ];
+        }
+    } else if (gameState.currentLevel >= 7 && gameState.currentLevel <= 9) {
+        // Emotion mode
+        if (originalPrompt.includes('lonely')) {
+            fallbackWords = ['lonely', 'melancholic', 'isolated', 'quiet', 'somber'];
+            specificInsights = `In emotion-only mode, you must describe feelings, not objects. Focus on isolation, solitude, and the emotional weight of the scene.`;
+            specificTips = [
+                '<strong>Primary Emotion:</strong> "Lonely", "isolated", or "solitary" capture the core feeling',
+                '<strong>Mood Modifiers:</strong> "Melancholic", "pensive", or "reflective" add emotional depth',
+                '<strong>Atmospheric Feelings:</strong> "Quiet", "still", or "empty" convey the emotional atmosphere without naming objects'
+            ];
+        } else if (originalPrompt.includes('tense')) {
+            fallbackWords = ['tense', 'anxious', 'pressured', 'stressful', 'intense'];
+            specificInsights = `Capture the stress and pressure of the moment using only emotional descriptors. Think about how the scene makes you feel.`;
+            specificTips = [
+                '<strong>Core Tension:</strong> "Tense", "stressful", or "pressured" establish the uncomfortable feeling',
+                '<strong>Intensity Level:</strong> "Anxious", "nervous", or "uneasy" show the emotional charge',
+                '<strong>Energy Quality:</strong> "Intense", "charged", or "tight" describe the emotional atmosphere'
+            ];
+        } else {
+            fallbackWords = ['joyful', 'celebratory', 'energetic', 'euphoric', 'vibrant'];
+            specificInsights = `Express pure joy and celebration through emotion words only. Focus on the positive energy and excitement.`;
+            specificTips = [
+                '<strong>Positive Emotions:</strong> "Joyful", "happy", or "delighted" capture the uplifting feeling',
+                '<strong>Celebration Energy:</strong> "Celebratory", "festive", or "jubilant" convey the party atmosphere',
+                '<strong>Vitality:</strong> "Energetic", "lively", or "vibrant" show the dynamic emotional quality'
+            ];
+        }
     } else {
+        // Bias mode or general fallback
         fallbackWords = ['detailed', 'atmospheric', 'vivid', 'cinematic', 'striking'];
+        specificInsights = `Your words "${gameState.userWords.join(', ')}" captured some elements. To improve, be more specific about colors, lighting, and composition.`;
+        specificTips = [
+            '<strong>Be Specific:</strong> Replace general words like "nice" with vivid descriptors like "golden", "dramatic", or "ethereal"',
+            '<strong>Include Atmosphere:</strong> Mention lighting (sunset, dim, bright), mood (peaceful, tense, joyful), or time of day',
+            '<strong>Visual Details Matter:</strong> Focus on what you can see - colors, textures, composition, and scale help AI understand better'
+        ];
     }
     
     // Display suggested words
@@ -571,20 +653,13 @@ function showFallbackFeedback() {
         `<span class="word-tag suggested">${word}</span>`
     ).join('');
     
-    // Context-aware insights
-    const userWords = gameState.userWords.join(', ');
-    document.getElementById('ai-insights').innerHTML = `
-        <p>Your words "${userWords}" captured some elements of the scene. To get closer to the original, 
-        try being more specific about colors, lighting, and the overall mood. Think about what makes this 
-        particular scene unique and distinctive.</p>
-    `;
+    // Display specific insights
+    document.getElementById('ai-insights').innerHTML = `<p>${specificInsights}</p>`;
     
-    // General but useful tips
-    document.getElementById('tips-list').innerHTML = `
-        <div class="tip-item"><strong>Be Specific:</strong> Replace general words like "nice" or "good" with vivid descriptors like "golden", "dramatic", or "ethereal"</div>
-        <div class="tip-item"><strong>Include Atmosphere:</strong> Mention lighting (sunset, dim, bright), mood (peaceful, tense, joyful), or time of day</div>
-        <div class="tip-item"><strong>Visual Details Matter:</strong> Focus on what you can see - colors, textures, composition, and scale help AI understand better</div>
-    `;
+    // Display specific tips
+    document.getElementById('tips-list').innerHTML = specificTips.map(tip => 
+        `<div class="tip-item">${tip}</div>`
+    ).join('');
 }
 
 // Proceed to Next Challenge
