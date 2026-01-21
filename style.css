@@ -172,6 +172,64 @@ h2 {
     line-height: 1.6;
 }
 
+.card-description {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #00bcd4;
+    line-height: 1.4;
+}
+
+/* Game Modes Info Section */
+.game-modes-info {
+    margin: 40px 0;
+    padding: 30px;
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 50%);
+    border-radius: 15px;
+}
+
+.game-modes-info h3 {
+    color: #0277bd;
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.5rem;
+}
+
+.mode-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.mode-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid #4dd0e1;
+    transition: all 0.3s ease;
+}
+
+.mode-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(77, 208, 225, 0.3);
+}
+
+.mode-card h4 {
+    color: #0277bd;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.mode-card p {
+    color: #0277bd;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.mode-card strong {
+    color: #00bcd4;
+    font-weight: 700;
+}
+
 /* Level Select */
 .level-groups {
     display: flex;
@@ -239,6 +297,37 @@ h2 {
 }
 
 /* Image Display */
+.blind-warning {
+    text-align: center;
+    padding: 50px 30px;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe082 100%);
+    border-radius: 15px;
+    border: 3px solid #ffa000;
+    margin: 20px 0;
+}
+
+.blind-warning h2 {
+    color: #f57c00;
+    margin-bottom: 20px;
+    font-size: 2rem;
+}
+
+.warning-text {
+    font-size: 1.3rem;
+    color: #e65100;
+    margin: 20px 0;
+    line-height: 1.8;
+}
+
+.warning-text strong {
+    color: #d84315;
+    font-size: 1.5rem;
+}
+
+.observation-content {
+    display: block;
+}
+
 .image-container {
     position: relative;
     width: 100%;

@@ -31,20 +31,47 @@
                 <div class="card">
                     <div class="step-number">1</div>
                     <h3>Observe the AI-generated image</h3>
+                    <p class="card-description">Look carefully at colors, objects, mood, and composition</p>
                 </div>
                 <div class="card">
                     <div class="step-number">2</div>
                     <h3>Identify exactly 5 key words</h3>
+                    <p class="card-description">Choose words that best describe what you see</p>
                 </div>
                 <div class="card">
                     <div class="step-number">3</div>
                     <h3>AI regenerates an image from your words</h3>
+                    <p class="card-description">See how well your words captured the scene</p>
                 </div>
                 <div class="card">
                     <div class="step-number">4</div>
                     <h3>Compare and learn what AI understood</h3>
+                    <p class="card-description">Get personalized feedback to improve your prompts</p>
                 </div>
             </div>
+            
+            <div class="game-modes-info">
+                <h3>🎮 Game Modes You'll Experience:</h3>
+                <div class="mode-cards">
+                    <div class="mode-card">
+                        <h4>📝 Basic Prompting (Levels 1-3)</h4>
+                        <p>Learn the fundamentals - observe images and describe them with 5 words. Take your time!</p>
+                    </div>
+                    <div class="mode-card">
+                        <h4>⏱️ Memory Challenge (Levels 4-6)</h4>
+                        <p><strong>Limited viewing time!</strong> The image disappears after 10 seconds. Describe from memory only.</p>
+                    </div>
+                    <div class="mode-card">
+                        <h4>💭 Emotion Only (Levels 7-9)</h4>
+                        <p><strong>Adjectives only!</strong> Describe feelings and mood. No nouns - only emotional words allowed.</p>
+                    </div>
+                    <div class="mode-card">
+                        <h4>🔍 Bias Detection (Levels 10-12)</h4>
+                        <p>Identify where AI adds assumptions. Learn about AI bias and stereotypes.</p>
+                    </div>
+                </div>
+            </div>
+            
             <button class="btn btn-primary" onclick="startLevel(1)">Begin Level 1</button>
         </div>
     </div>
@@ -82,16 +109,21 @@
     <!-- SCREEN 4: Image Observation (Core Mode) -->
     <div id="observation-screen" class="screen">
         <div class="container">
-            <div class="level-header" style="display: none;">
-                <span id="current-level-display">Level 1</span>
-                <span id="mode-display">Core Prompt Mirror</span>
+            <div id="blind-mode-warning" class="blind-warning" style="display: none;">
+                <h2>⚠️ Memory Challenge Mode</h2>
+                <p class="warning-text">The image will be shown for <strong><span id="time-limit">10</span> seconds only</strong>!</p>
+                <p>Memorize carefully - you won't see it again when entering words.</p>
+                <button class="btn btn-primary" onclick="startBlindObservation()">I'm Ready - Show Image</button>
             </div>
-            <div class="image-container">
-                <img id="original-image" src="" alt="AI Generated Image">
-                <div id="timer-display" class="timer"></div>
+            
+            <div id="observation-content" class="observation-content">
+                <div class="image-container">
+                    <img id="original-image" src="" alt="AI Generated Image">
+                    <div id="timer-display" class="timer"></div>
+                </div>
+                <p class="hint" id="observation-hint">Look for subject, action, environment, style, and mood.</p>
+                <button class="btn btn-primary" id="extract-btn" onclick="goToExtraction()">Extract 5 Words</button>
             </div>
-            <p class="hint" id="observation-hint">Look for subject, action, environment, style, and mood.</p>
-            <button class="btn btn-primary" id="extract-btn" onclick="goToExtraction()">Extract 5 Words</button>
         </div>
     </div>
 

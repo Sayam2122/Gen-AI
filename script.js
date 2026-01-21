@@ -106,10 +106,6 @@ function startLevel(level) {
 async function generateInitialImage(prompt) {
     const config = levelConfig[gameState.currentLevel];
     
-    // Update level display (hidden now, but kept for potential use)
-    document.getElementById('current-level-display').textContent = getStageDisplayName();
-    document.getElementById('mode-display').textContent = getModeDisplayName();
-    
     // Show loading
     showScreen('regeneration-screen');
     document.getElementById('prompt-display').textContent = 'Generating image...';
@@ -125,35 +121,55 @@ async function generateInitialImage(prompt) {
         // Set the image
         document.getElementById('original-image').src = gameState.originalImage;
         
-        // Configure screen based on mode with appropriate hints
+        // Configure screen based on mode
         if (config.mode === 'blind') {
-            setupBlindMode(config.viewTime);
-            document.getElementById('observation-hint').textContent = 'Memorize carefully - time is limited!';
-        } else if (config.mode === 'emotion') {
-            document.getElementById('timer-display').style.display = 'none';
-            document.getElementById('observation-hint').textContent = 'Focus only on emotions, mood, and atmosphere.';
+            // Show blind mode warning first
+            showBlindModeWarning(config.viewTime);
         } else {
+            document.getElementById('blind-mode-warning').style.display = 'none';
+            document.getElementById('observation-content').style.display = 'block';
             document.getElementById('timer-display').style.display = 'none';
-            document.getElementById('observation-hint').textContent = 'Look for subject, action, environment, style, and mood.';
+            document.getElementById('observation-hint').textContent = 
+                config.mode === 'emotion' 
+                    ? 'Focus only on emotions, mood, and atmosphere - use adjectives only!' 
+                    : 'Look for subject, action, environment, style, and mood.';
+            showScreen('observation-screen');
         }
-        
-        showScreen('observation-screen');
     } catch (error) {
         console.error('Error generating image:', error);
         alert('Failed to generate image. Using placeholder instead.');
         
         // Fallback to placeholder
-        gameState.originalImage = `https://via.placeholder.com/800x600/4dd0e1/ffffff?text=Level+${gameState.currentLevel}+Original`;
+        gameState.originalImage = `https://via.placeholder.com/800x600/4dd0e1/ffffff?text=Challenge+${gameState.currentLevel}`;
         document.getElementById('original-image').src = gameState.originalImage;
         
         if (config.mode === 'blind') {
-            setupBlindMode(config.viewTime);
+            showBlindModeWarning(config.viewTime);
         } else {
+            document.getElementById('blind-mode-warning').style.display = 'none';
+            document.getElementById('observation-content').style.display = 'block';
             document.getElementById('timer-display').style.display = 'none';
+            showScreen('observation-screen');
         }
-        
-        showScreen('observation-screen');
     }
+}
+
+// Show blind mode warning
+function showBlindModeWarning(viewTime) {
+    document.getElementById('blind-mode-warning').style.display = 'block';
+    document.getElementById('observation-content').style.display = 'none';
+    document.getElementById('time-limit').textContent = viewTime;
+    gameState.imageViewTime = viewTime;
+    showScreen('observation-screen');
+}
+
+// Start blind observation after user clicks ready
+function startBlindObservation() {
+    document.getElementById('blind-mode-warning').style.display = 'none';
+    document.getElementById('observation-content').style.display = 'block';
+    
+    const config = levelConfig[gameState.currentLevel];
+    setupBlindMode(config.viewTime);
 }
 
 // Generate image using Pollinations.ai API (free, no API key needed)
@@ -254,10 +270,10 @@ function goToExtraction() {
     // Update rule badge for emotion mode
     if (config.mode === 'emotion') {
         document.getElementById('rule-badge').innerHTML = `
-            <p>❌ No nouns</p>
-            <p>✅ Emotions only</p>
+            <p>❌ No nouns (objects, people, places)</p>
+            <p>✅ Adjectives only (emotions, feelings, moods)</p>
         `;
-        document.getElementById('input-hint').textContent = 'Example: "Lonely", "Tense", "Peaceful"';
+        document.getElementById('input-hint').textContent = 'Example: "Lonely", "Tense", "Peaceful", "Melancholic", "Joyful"';
     } else {
         document.getElementById('rule-badge').innerHTML = `
             <p>✓ Exactly 5 words</p>
@@ -335,14 +351,56 @@ async function generateImage() {
 }
 
 function validateEmotionWords(words) {
-    // List of common nouns to reject (simplified for demo)
-    const bannedNouns = ['person', 'people', 'man', 'woman', 'car', 'house', 'tree', 'dog', 'cat', 'table', 'chair', 'book'];
+    // Common nouns to reject (objects, people, places)
+    const bannedNouns = [
+        // People
+        'person', 'people', 'man', 'woman', 'child', 'boy', 'girl', 'human', 'figure', 'someone',
+        // Objects
+        'car', 'house', 'tree', 'dog', 'cat', 'table', 'chair', 'book', 'phone', 'computer',
+        'building', 'road', 'street', 'window', 'door', 'wall', 'floor', 'ceiling',
+        // Places
+        'beach', 'ocean', 'mountain', 'forest', 'city', 'town', 'room', 'office', 'home',
+        'restaurant', 'shop', 'store', 'park', 'garden', 'lake', 'river',
+        // Nature
+        'sun', 'moon', 'star', 'cloud', 'rain', 'snow', 'wind', 'sky', 'water', 'fire',
+        'flower', 'grass', 'leaf', 'branch', 'rock', 'stone', 'sand',
+        // Animals
+        'bird', 'fish', 'animal', 'insect', 'butterfly', 'horse', 'cow'
+    ];
+    
+    // Valid emotion/mood adjectives
+    const validEmotionWords = [
+        'happy', 'sad', 'angry', 'joyful', 'melancholic', 'peaceful', 'tense', 'anxious',
+        'lonely', 'excited', 'calm', 'serene', 'cheerful', 'gloomy', 'mysterious', 'bright',
+        'dark', 'warm', 'cold', 'cozy', 'uncomfortable', 'energetic', 'tired', 'lively',
+        'quiet', 'loud', 'gentle', 'harsh', 'soft', 'intense', 'relaxed', 'stressed',
+        'hopeful', 'desperate', 'confident', 'nervous', 'playful', 'serious', 'romantic',
+        'dramatic', 'subtle', 'vibrant', 'dull', 'fresh', 'stale', 'clean', 'messy',
+        'elegant', 'rough', 'smooth', 'chaotic', 'organized', 'wild', 'tame', 'fierce',
+        'delicate', 'strong', 'weak', 'powerful', 'fragile', 'bold', 'timid', 'brave'
+    ];
     
     for (let word of words) {
-        if (bannedNouns.includes(word.toLowerCase())) {
+        const lowerWord = word.toLowerCase();
+        
+        // Check if it's a banned noun
+        if (bannedNouns.includes(lowerWord)) {
+            alert(`"${word}" is a noun! Use only adjectives that describe emotions, mood, or atmosphere.`);
             return false;
         }
+        
+        // Check if word ends with common noun suffixes (but not adjective suffixes)
+        if (lowerWord.match(/ing$/) && !validEmotionWords.includes(lowerWord)) {
+            // Allow -ing words that are adjectives like "striking", "captivating"
+            const emotionalIng = ['striking', 'captivating', 'interesting', 'boring', 'exciting', 
+                                 'relaxing', 'disturbing', 'soothing', 'overwhelming'];
+            if (!emotionalIng.includes(lowerWord)) {
+                alert(`"${word}" seems like a verb or noun. Use adjectives only - words that describe feelings!`);
+                return false;
+            }
+        }
     }
+    
     return true;
 }
 
