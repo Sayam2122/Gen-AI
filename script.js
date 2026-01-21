@@ -34,8 +34,77 @@ const levelConfig = {
 
 // Initialize game
 function initGame() {
-    renderLevelSelect();
+    renderLevelGrid();
     updateProgressDisplay();
+}
+
+// Render Level Grid (new visual level selector)
+function renderLevelGrid() {
+    const levelsGrid = document.getElementById('levels-grid');
+    levelsGrid.innerHTML = '';
+    
+    const levelIcons = {
+        1: '🏔️', 2: '🌆', 3: '🐠',
+        4: '☕', 5: '📚', 6: '🎨',
+        7: '🏖️', 8: '💼', 9: '🎉',
+        10: '👨‍⚕️', 11: '👨‍🍳', 12: '👨‍🔬'
+    };
+    
+    const levelTitles = {
+        1: 'Mountain Sunset', 2: 'City Streets', 3: 'Underwater World',
+        4: 'Cozy Café', 5: 'Classic Library', 6: 'Modern Gallery',
+        7: 'Lonely Beach', 8: 'Tense Meeting', 9: 'Joyful Celebration',
+        10: 'Doctor Visit', 11: 'Chef at Work', 12: 'Lab Scientist'
+    };
+    
+    const levelModes = {
+        1: '📝 Basic', 2: '📝 Basic', 3: '📝 Basic',
+        4: '⏱️ Memory', 5: '⏱️ Memory', 6: '⏱️ Memory',
+        7: '💭 Emotion', 8: '💭 Emotion', 9: '💭 Emotion',
+        10: '🔍 Bias', 11: '🔍 Bias', 12: '🔍 Bias'
+    };
+    
+    for (let i = 1; i <= 12; i++) {
+        const levelCard = document.createElement('div');
+        levelCard.className = 'level-card';
+        
+        // Check if completed
+        if (gameState.completedLevels.includes(i)) {
+            levelCard.classList.add('completed');
+        }
+        
+        // Lock mechanism (currently disabled - all levels open)
+        // TODO: Enable this when user requests to close levels
+        const isLocked = false; // Change to: i > 1 && !gameState.completedLevels.includes(i - 1)
+        
+        if (isLocked) {
+            levelCard.classList.add('locked');
+        } else {
+            levelCard.onclick = () => startLevel(i);
+        }
+        
+        levelCard.innerHTML = `
+            <div class="level-icon">${levelIcons[i]}</div>
+            <div class="level-number">Challenge ${i}</div>
+            <div class="level-title">${levelTitles[i]}</div>
+            <div class="level-mode">${levelModes[i]}</div>
+        `;
+        
+        levelsGrid.appendChild(levelCard);
+    }
+    
+    // Update progress counter
+    updateProgressCounter();
+}
+
+// Update progress counter in level select
+function updateProgressCounter() {
+    const completed = gameState.completedLevels.length;
+    document.getElementById('progress-count').textContent = completed;
+    
+    const progressFill = document.getElementById('mini-progress');
+    const percentage = (completed / 12) * 100;
+    progressFill.style.width = percentage + '%';
 }
 
 // Screen Navigation
@@ -46,7 +115,7 @@ function showScreen(screenId) {
     document.getElementById(screenId).classList.add('active');
 }
 
-// Render Level Select
+// Render Level Select (old system - keeping for reference)
 function renderLevelSelect() {
     // Levels 1-3 (Core)
     renderLevelButtons(1, 3, 'levels-1-3');
@@ -734,9 +803,9 @@ function proceedToNextChallenge() {
         return;
     }
     
-    // Move to next level
-    gameState.currentLevel++;
-    startLevel(gameState.currentLevel);
+    // Refresh the level grid and show it
+    renderLevelGrid();
+    showScreen('level-select-screen');
 }
 
 // Bias Detection
