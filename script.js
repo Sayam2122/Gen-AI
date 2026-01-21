@@ -28,7 +28,7 @@ const levelConfig = {
     8: { mode: 'emotion', prompt: 'A tense meeting room atmosphere', difficulty: 'medium' },
     9: { mode: 'emotion', prompt: 'A joyful celebration with vibrant energy', difficulty: 'hard' },
     10: { mode: 'bias', prompt: 'A doctor examining a patient', biasType: 'gender' },
-    11: { mode: 'bias', prompt: 'A chef cooking in a restaurant', biasType: 'cultural' },
+    11: { mode: 'bias', prompt: 'A female chef cooking in a restaurant', biasType: 'cultural' },
     12: { mode: 'bias', prompt: 'A scientist working in a laboratory', biasType: 'stereotype' }
 };
 
@@ -174,12 +174,19 @@ function startLevel(level) {
     generateInitialImage(config.prompt);
 }
 
+// Start bias level after intro
+function startBiasLevel() {
+    const config = levelConfig[gameState.currentLevel];
+    generateInitialImage(config.prompt);
+}
+
 // Generate Initial Image (simulated for now)
 async function generateInitialImage(prompt) {
     const config = levelConfig[gameState.currentLevel];
     
     // Show loading
     showScreen('regeneration-screen');
+    document.getElementById('regeneration-title').textContent = 'AI is generating the challenge image...';
     document.getElementById('prompt-display').textContent = 'Generating image...';
     
     try {
@@ -190,12 +197,15 @@ async function generateInitialImage(prompt) {
         gameState.originalImage = imageUrl;
         gameState.originalImageDescription = prompt;
         
+        // Preload the image before showing any screen
+        await preloadImage(imageUrl);
+        
         // Set the image
         document.getElementById('original-image').src = gameState.originalImage;
         
         // Configure screen based on mode
         if (config.mode === 'blind') {
-            // Show blind mode warning first
+            // Show blind mode warning first (image is already loaded)
             showBlindModeWarning(config.viewTime);
         } else {
             document.getElementById('blind-mode-warning').style.display = 'none';
@@ -226,6 +236,16 @@ async function generateInitialImage(prompt) {
     }
 }
 
+// Preload image to ensure it's ready before showing
+function preloadImage(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => reject();
+        img.src = url;
+    });
+}
+
 // Show blind mode warning
 function showBlindModeWarning(viewTime) {
     document.getElementById('blind-mode-warning').style.display = 'block';
@@ -239,6 +259,13 @@ function showBlindModeWarning(viewTime) {
 function startBlindObservation() {
     document.getElementById('blind-mode-warning').style.display = 'none';
     document.getElementById('observation-content').style.display = 'block';
+    document.getElementById('timer-display').style.display = 'block';
+    
+    // Make sure the image is visible
+    const imageElement = document.getElementById('original-image');
+    imageElement.style.display = 'block';
+    imageElement.style.visibility = 'visible';
+    imageElement.style.opacity = '1';
     
     const config = levelConfig[gameState.currentLevel];
     setupBlindMode(config.viewTime);
@@ -383,6 +410,8 @@ async function generateImage() {
     }
     
     // Show loading screen
+    const wordCount = gameState.userWords.length;
+    document.getElementById('regeneration-title').textContent = `AI is recreating the image using your ${wordCount} words.`;
     document.getElementById('prompt-display').textContent = gameState.userWords.join(', ');
     showScreen('regeneration-screen');
     
@@ -397,8 +426,8 @@ async function generateImage() {
         // Generate image using the enhanced prompt
         gameState.recreatedImage = await generateImageWithPollinations(enhancedPrompt);
         
-        // Wait a moment for effect
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Preload the recreated image before showing comparison
+        await preloadImage(gameState.recreatedImage);
         
         // Go to appropriate comparison screen
         if (config.mode === 'bias') {
@@ -846,11 +875,13 @@ function showBiasFeedback(selectedType) {
     const config = levelConfig[gameState.currentLevel];
     const actualBias = config.biasType || 'none';
     
-    // Determine if correct
-    const correct = (selectedType === actualBias) || 
-                   (selectedType === 'visual' && actualBias === 'gender') ||
-                   (selectedType === 'cultural' && actualBias === 'cultural') ||
-                   (selectedType === 'stereotype' && actualBias === 'stereotype');
+    // Determine if correct - Gender bias can be detected as visual or stereotype
+    let correct = false;
+    if (actualBias === 'gender') {
+        correct = (selectedType === 'visual' || selectedType === 'stereotype');
+    } else {
+        correct = (selectedType === actualBias);
+    }
     
     document.getElementById('bias-detected').textContent = correct ? 'Yes' : 'Maybe';
     document.getElementById('bias-type').textContent = 
