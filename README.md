@@ -1,191 +1,244 @@
-# Prompt Mirror - AI Image Prompt Game
+# Prompt Mirror - AI Image Prompt Learning Game
 
 **See → Decode → Recreate**
 
-An interactive web game where players observe AI-generated images, extract key words, and see how AI recreates the image from their descriptions.
+An interactive single-player web game that teaches AI image prompting through 12 progressive challenges. Players observe AI-generated images, extract key words, and discover how AI recreates images from their descriptions.
 
 ## 🎮 Game Modes
 
-### Level 1-3: Core Prompt Mirror
-Learn the basics of AI prompting by describing images with exactly 5 words.
+### 📝 Levels 1-3: Core Prompt Mirror (Basic Mode)
+Learn the fundamentals of AI prompting by describing images with exactly 5 words.
+- **Level 1**: Mountain Sunset 🏔️
+- **Level 2**: City Streets 🌆  
+- **Level 3**: Underwater World 🐠
 
-### Level 4-6: Blind Prompt Mode
-Memorize the image in limited time, then describe it from memory only.
+### ⏱️ Levels 4-6: Memory Challenge (Blind Mode)
+Memorize the image in limited time (10s/8s/6s), then describe it from memory only.
+- **Level 4**: Cozy Café ☕ (10 seconds)
+- **Level 5**: Classic Library 📚 (8 seconds)
+- **Level 6**: Modern Gallery 🎨 (6 seconds)
 
-### Level 7-9: Emotion-Only Mode
-Describe images using ONLY emotional words - no objects or nouns allowed.
+### 💭 Levels 7-9: Emotion Only Mode
+Describe images using ONLY emotional adjectives - no objects, nouns, or physical descriptions allowed.
+- **Level 7**: Lonely Beach 🏖️
+- **Level 8**: Tense Meeting 💼
+- **Level 9**: Joyful Celebration 🎉
 
-### Level 10-12: Bias Spotter Mode
-Identify where AI adds assumptions and stereotypes that weren't in the original prompt.
+### 🔍 Levels 10-12: Bias Spotter Mode
+Identify where AI adds assumptions, gender bias, cultural bias, and stereotypes that weren't in the original prompt.
+- **Level 10**: Doctor Visit 👨‍⚕️ (Gender Bias)
+- **Level 11**: Female Chef 👩‍🍳 (Cultural Bias)
+- **Level 12**: Lab Scientist 👨‍🔬 (Role Stereotype)
 
 ## 🚀 Getting Started
 
-### 1. Open the Game
-Simply open `index.html` in a modern web browser (Chrome, Firefox, Edge, Safari).
-
-### 2. Play Locally
-No server required! The game runs entirely in your browser.
+### 1. Quick Start
+Simply open `index.html` in a modern web browser:
 
 ```bash
-# Just open the file
-start index.html  # Windows
-open index.html   # Mac
-xdg-open index.html  # Linux
+# Windows
+start index.html
+
+# Mac
+open index.html
+
+# Linux
+xdg-open index.html
 ```
 
-### 3. Or Use Live Server
-For development, you can use VS Code's Live Server extension:
-- Install "Live Server" extension in VS Code
-- Right-click `index.html` → "Open with Live Server"
+### 2. Development Setup
+For live reloading during development:
 
-## 🔑 API Integration
+1. Install VS Code's Live Server extension
+2. Right-click `index.html` → "Open with Live Server"
+3. Game will run at `http://localhost:5500`
 
-The game currently uses **placeholder images** for demonstration. To enable real AI image generation:
+## 🔑 API Configuration
 
-### Option 1: Use DALL-E API (Recommended)
-1. Get an API key from [OpenAI Platform](https://platform.openai.com/)
-2. Replace the `generateInitialImage()` function in `script.js`:
+### Current Setup
+The game uses **two APIs** for full functionality:
 
+1. **Pollinations.ai** - Free image generation (no API key needed)
+2. **Google Gemini API** - AI-powered feedback and prompt enhancement
+
+### API Key Setup
+
+1. Create a `config.js` file (already included):
 ```javascript
-async function generateInitialImage(prompt) {
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer YOUR_OPENAI_API_KEY`
-        },
-        body: JSON.stringify({
-            prompt: prompt,
-            n: 1,
-            size: "1024x1024"
-        })
-    });
-    
-    const data = await response.json();
-    gameState.originalImage = data.data[0].url;
-    document.getElementById('original-image').src = gameState.originalImage;
-    showScreen('observation-screen');
-}
+const CONFIG = {
+    GEMINI_API_KEY: 'YOUR_API_KEY_HERE',
+    GEMINI_API_ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+};
 ```
 
-### Option 2: Use Stable Diffusion API
-1. Get an API key from [Stability AI](https://platform.stability.ai/)
-2. Update the API calls accordingly
+2. Get your Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-### Option 3: Use Local Stable Diffusion
-1. Run Stable Diffusion locally with API enabled
-2. Point the fetch requests to `http://localhost:7860/api/`
+3. Create `.env` file (optional, for local environment variables):
+```
+GEMINI_API_KEY=your_actual_api_key_here
+```
+
+**Note**: The `.env` file is git-ignored for security.
 
 ## 🎨 Design Theme
 
-- **Background**: White with cyan (#022c3a) shading
-- **Primary Color**: Cyan (#022c3a)
-- **Secondary Color**: Light Cyan (#00acc1)
-- **Accents**: White backgrounds with gradient overlays
+- **Background**: White with cyan gradient accents
+- **Primary Color**: Cyan (#0277bd)
+- **Secondary Colors**: #00bcd4, #4dd0e1, #b2ebf2, #e0f7fa
+- **Typography**: Clean, modern sans-serif
+- **Layout**: Card-based with smooth animations
 
 ## 📁 File Structure
 
 ```
 module_2_activity_2/
-├── index.html      # Main game structure (19 screens)
-├── style.css       # White/cyan themed styling
-├── script.js       # Game logic and API integration
-└── README.md       # This file
+├── index.html           # Main game structure (19 screens)
+├── style.css            # White/cyan themed styling with animations
+├── script.js            # Game logic (927 lines)
+├── config.js            # API configuration
+├── .env                 # Environment variables (git-ignored)
+├── .gitignore          # Excludes .env and sensitive files
+└── README.md            # This file
 ```
 
 ## 🎯 Features
 
-✅ 12 Progressive Levels  
-✅ 4 Unique Game Modes  
-✅ Blind Mode Timer (10s, 8s, 6s)  
-✅ Emotion-Only Validation  
-✅ Bias Detection System  
-✅ Progress Tracking  
-✅ Skills Unlocking  
-✅ Responsive Design  
-✅ Beautiful Animations  
+✅ **12 Progressive Levels** with sequential unlocking  
+✅ **4 Unique Game Modes** (Basic, Memory, Emotion, Bias Detection)  
+✅ **Visual Level Selection Grid** with icons and progress tracking  
+✅ **AI-Powered Learning Feedback** using Google Gemini  
+✅ **Blind Mode Timer** with countdown (10s/8s/6s)  
+✅ **Emotion-Only Validation** (70+ banned nouns)  
+✅ **Bias Detection System** with side-by-side comparison  
+✅ **Level Locking** - unlock levels by completing previous ones  
+✅ **Progress Tracking** with skill unlocking  
+✅ **Responsive Design** for all screen sizes  
+✅ **Beautiful Animations** and smooth transitions  
+✅ **Real Image Generation** via Pollinations.ai API
 
-## 🔧 Customization
+## 🔧 Key Game Mechanics
 
-### Change Level Prompts
-Edit the `levelConfig` object in `script.js`:
+## 🔧 Key Game Mechanics
 
+### Level Progression
+- Levels unlock sequentially (complete Level 1 to unlock Level 2, etc.)
+- Progress is tracked and displayed on the level selection screen
+- 12 challenges total across 4 game modes
+
+### Word Validation
+- **Basic Mode**: Exactly 5 words required
+- **Emotion Mode**: Only adjectives allowed (70+ nouns are blocked)
+- **Memory Mode**: Must recall image details without seeing it
+- **Bias Mode**: No word restrictions, focus on comparison
+
+### Image Generation
 ```javascript
-const levelConfig = {
-    1: { mode: 'core', prompt: 'Your custom prompt here', difficulty: 'easy' },
-    // ... add more levels
-};
+// Uses Pollinations.ai free API
+const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&seed=${seed}&nologo=true`;
 ```
 
-### Adjust Timer Durations
-Modify the `viewTime` property for blind mode levels:
-
-```javascript
-4: { mode: 'blind', prompt: '...', viewTime: 15 }, // 15 seconds instead of 10
-```
-
-### Change Color Scheme
-Edit the CSS variables in `style.css`:
-
-```css
-/* Change these colors */
-#022c3a → Your primary color
-#00acc1 → Your secondary color
-#e0f7fa → Your light accent
-```
+### AI Feedback System
+After each level, Google Gemini analyzes your words and provides:
+- **Suggested Words**: Better alternatives for your prompts
+- **Insights**: What you captured well vs. what was missed
+- **Tips**: How to improve for future challenges
 
 ## 🎓 Learning Outcomes
 
 Players will learn:
-- How to write effective AI image prompts
-- The importance of specific keywords
-- How AI interprets emotional language
-- Common biases in AI image generation
-- The gap between description and recreation
+- ✅ How to write effective AI image prompts
+- ✅ The importance of specific vs. vague keywords
+- ✅ How AI interprets emotional language differently
+- ✅ Common biases in AI image generation (gender, cultural, role stereotypes)
+- ✅ The gap between human perception and AI interpretation
+- ✅ Memory retention and visual detail observation
 
-## 🐛 Known Limitations
+## � How to Play
 
-- Currently uses placeholder images (requires API integration for real generation)
-- Google Gemini API key provided is for text generation, not image generation
-- For production use, implement proper API key security (use backend proxy)
+1. **Select Level** - Choose from the visual grid (unlock by completing previous levels)
+2. **Observe** - Study the AI-generated image carefully
+3. **Extract** - Enter exactly 5 key words that capture the essence
+4. **Generate** - AI recreates the image using only your words
+5. **Compare** - See side-by-side what was preserved and lost
+6. **Learn** - Get AI-powered feedback on your word choices
+7. **Progress** - Advance to the next challenge!
 
-## 🚧 Future Enhancements
+### Special Modes:
+- **Memory Challenge**: Click "I'm Ready" after studying the image, then describe from memory during countdown
+- **Emotion Only**: Use ONLY adjectives describing mood/atmosphere (no objects!)
+- **Bias Detection**: Compare images and identify what assumptions the AI added
 
-- [ ] Real-time image generation with DALL-E or Stable Diffusion
-- [ ] Multiplayer mode
-- [ ] Leaderboard system
-- [ ] Save/load game progress
-- [ ] More game modes (Style Transfer, Iteration Mode)
-- [ ] AI-powered feedback on prompt quality
+## 🐛 Troubleshooting
 
-## 📝 Notes on API Key
+### Images not generating?
+- Check internet connection (Pollinations.ai requires online access)
+- Try refreshing the page
+- Check browser console for errors (F12)
 
-The provided API key (`AIzaSyDRTLt6DaexbKZre6owW41-ggXusFa7zxg`) is for Google's Gemini API, which is primarily for **text generation**, not image generation.
+### AI feedback not working?
+- Verify your Gemini API key in `config.js`
+- Ensure the API key is active and has quota
+- Check if the key has proper permissions
 
-For actual image generation, you'll need:
-- **OpenAI DALL-E**: Best quality, paid API
-- **Stable Diffusion**: Open source, free options available
-- **Midjourney**: High quality, Discord-based
+### Levels not unlocking?
+- Complete the previous level first
+- Check `gameState.completedLevels` in console
+- Progress is stored in browser session (clears on refresh)
 
-## 🎮 How to Play
+## � Security Notes
 
-1. **Observe** - Look carefully at the AI-generated image
-2. **Extract** - Identify exactly 5 key words
-3. **Generate** - AI recreates the image from your words
-4. **Compare** - See what was preserved and what was lost
-5. **Learn** - Understand how AI interprets your prompts
+- **Never commit `.env` files** to public repositories
+- Use environment variables for production deployment
+- Consider implementing a backend proxy for API calls in production
+- The `.gitignore` file prevents accidental `.env` commits
 
 ## 📱 Browser Compatibility
 
-- ✅ Chrome 90+
+- ✅ Chrome 90+ (Recommended)
 - ✅ Firefox 88+
 - ✅ Safari 14+
 - ✅ Edge 90+
+- ✅ Mobile browsers (responsive design)
+
+## 🚧 Future Enhancements
+
+- [ ] Save game progress to localStorage
+- [ ] Multiplayer mode with leaderboards
+- [ ] More game modes (Style Transfer, Iteration Challenge)
+- [ ] Difficulty settings (3/5/7 word modes)
+- [ ] Export prompt improvement report
+- [ ] Integration with DALL-E or Midjourney APIs
+- [ ] Custom level creator
+
+## 📊 Technical Stack
+
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript
+- **Image Generation**: Pollinations.ai API (free, no key required)
+- **AI Feedback**: Google Gemini API (text generation)
+- **Hosting**: Static files (can deploy to GitHub Pages, Netlify, Vercel)
+- **Version Control**: Git + GitHub
 
 ## 📄 License
 
-This project is for educational purposes. Feel free to modify and extend!
+This project is for educational purposes. Feel free to modify, extend, and use for learning!
+
+## 🤝 Contributing
+
+Contributions welcome! Feel free to:
+- Report bugs via GitHub Issues
+- Suggest new game modes or features
+- Improve documentation
+- Submit pull requests
+
+## � Support
+
+For questions or issues:
+1. Check the troubleshooting section above
+2. Review the code comments in `script.js`
+3. Open a GitHub Issue with details
 
 ---
 
-**Enjoy playing Prompt Mirror!** 🎯✨
+**Enjoy mastering AI prompting!** 🎯✨
+
+Made with ❤️ for AI learners everywhere
