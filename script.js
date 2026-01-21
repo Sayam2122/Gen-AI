@@ -73,9 +73,8 @@ function renderLevelGrid() {
             levelCard.classList.add('completed');
         }
         
-        // Lock mechanism (currently disabled - all levels open)
-        // TODO: Enable this when user requests to close levels
-        const isLocked = false; // Change to: i > 1 && !gameState.completedLevels.includes(i - 1)
+        // Lock mechanism - levels unlock only when previous level is completed
+        const isLocked = i > 1 && !gameState.completedLevels.includes(i - 1);
         
         if (isLocked) {
             levelCard.classList.add('locked');
